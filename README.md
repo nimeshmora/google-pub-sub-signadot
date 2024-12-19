@@ -136,6 +136,7 @@
    - Send a message with a routing key.
    - Verify that only the sandbox Subscriber processes the message.
 
+[Note that each consumer that is sandboxed will need to create a new "subscription" as per https://cloud.google.com/pubsub/docs/pubsub-basics as it needs to get a copy of all the msgs that the baseline consumer receives.]
 ### Step 7: Monitor and Debug
 
 1. **Log Observations:**
