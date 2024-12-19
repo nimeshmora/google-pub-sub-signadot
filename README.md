@@ -21,6 +21,8 @@
 - Signadot Sandboxes allow developers to test Pub/Sub workflows in isolated environments.
 - By leveraging routing keys and the Routes API, messages are dynamically routed to sandbox-specific services.
 
+[This section can be concise as this is a tutorial is about using Sandboxes with Google Pub/Sub and the focus is on the code and getting it to work end-to-end. The "why sandbox" aspect is assumed to be known and it out of scope for this tutorial.]
+
 ## Components of the Demo Application
 
 ### Publisher:
