@@ -1,0 +1,7 @@
+spring:
+  cloud:
+    gcp:
+      pubsub:
+        project-id: pub-sub-demo-445302
+      credentials:
+        location: classpath:pub-sub-demo-service.json
