@@ -3,11 +3,9 @@ module.exports = {
     // Ports
     frontendPort: process.env.FRONTEND_PORT || 4000,
     producerPort: process.env.PRODUCER_PORT || 4001,
-    consumerPort: process.env.CONSUMER_PORT || 4001,
 
     // Addresses
     producerHost: process.env.PRODUCER_HOST || "producer.kafka-demo.svc",
-    consumerHost: process.env.PRODUCER_HOST || "consumer.kafka-demo.svc",
     redisURL: process.env.REDIS_URL || "redis://redis.kafka-demo.svc:6379",
     kafkaAddr: process.env.KAFKA_ADDR || "kafka-headless.kafka-demo.svc:9092",
     routeServerAddr: "routeserver.signadot.svc:7778",
@@ -20,7 +18,5 @@ module.exports = {
     // Sandbox
     sandboxName: process.env.SIGNADOT_SANDBOX_NAME || "",
 
-    // Kafka
-    kafkaTopic: process.env.KAFKA_TOPIC || "pubsub-signadot-demo",
-    pubsubTopic: process.env.KAFKA_TOPIC || "pubsub-signadot-demo"
+    pubsubTopic: process.env.PUBSUB_TOPIC || "google-pubsub-demo"
 }
