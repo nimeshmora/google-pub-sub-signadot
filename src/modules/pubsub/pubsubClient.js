@@ -4,7 +4,7 @@ const path = require('path')
 
 const pubSubClient = new PubSub({
     projectId: process.env.PROJECT_ID, 
-    keyFilename: path.join(__dirname, 'saps.json')
+    keyFilename: path.join(__dirname, 'sa', 'saps.json')
 });
 
 exports.pubSubClient = pubSubClient;
