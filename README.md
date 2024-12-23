@@ -1,4 +1,4 @@
-@@ -1 +1,125 @@
+
 # google-pub-sub-signadot
 # Sandboxes for Services that Use Google Pub/Sub
 ## Introduction
@@ -43,37 +43,55 @@
    git clone <repository-url>
    cd <repository-directory>
    ```
-2. **Deploy the Application:**
+2. **Create a Service Account and Grant Permissions:**
+   1. Go to **IAM & Admin** in the Google Cloud Console.
+   2. Create a new service account and grant the `Pub/Sub Admin` role.
+   3. Copy the service account email address.
+   4. Open `k8s/pubsub/pubsubsa.yaml` and set the `iam.gke.io/gcp-service-account` property with the service account email.
+   5. Apply the changes:
+      ```bash
+      kubectl apply -f k8s/pubsub/pubsubsa.yaml
+      ```
+3.  **Configure IAM Policy Binding:**
+    **Check IAM Admin Role:** Verify that the service account has been granted the IAM Admin role.
+    **Bind Workload Identity:**
+    ```bash
+    gcloud iam service-accounts add-iam-policy-binding <service account email> \
+    --member="serviceAccount:<project id>.svc.id.goog[pubsub-demo/pubsub-ksa]" \
+    --role="roles/iam.workloadIdentityUser" \
+    --project=<project id>
+    ```
+4. **Deploy the Application:**
    - Deploy all necessary components, including the Publisher, Subscriber, Redis, and Frontend.
    ```bash
    kubectl apply -f manifests/
    ```
-3. **Verify the Deployment:**
+5. **Verify the Deployment:**
    - Ensure all components are running properly in the Kubernetes cluster.
    ```bash
    kubectl get pods
    ```
-4. **Expose the Frontend:**
+6. **Expose the Frontend:**
    - Forward the frontend service to enable interaction with the demo application.
    ```bash
    kubectl port-forward svc/frontend 8080:80
    ```
-### Step 2: Test Baseline Behavior Without Sandboxes
+### Step 3: Test Baseline Behavior Without Sandboxes
 1. **Access the Frontend:** Open the frontend in a browser.
 2. **Send a Message:** Send a message without a routing key using the frontend.
 3. **Observe Results:** Verify that the baseline subscriber processes the message. Confirm that sandbox subscribers ignore the message.
-### Step 3: Update the Publisher for Routing Key Propagation
+### Step 4: Update the Publisher for Routing Key Propagation
 1. **Extract Routing Key:** Modify the Publisher to extract routing keys from incoming requests.
 2. **Attach Routing Key to Messages:** Ensure the routing key is added to Pub/Sub message attributes before publishing.
-### Step 4: Update Subscriber for Selective Message Consumption
+### Step 5: Update Subscriber for Selective Message Consumption
 1. **Assign Unique Subscription Names:** Dynamically generate subscription names using the sandbox environment variable provided by Signadot.
 2. **Fetch Routing Keys Using the Routes API:** Periodically update routing keys from the Signadot Routes API.
 3. **Filter Messages Based on Routing Keys:** Implement logic to process messages only if the routing key matches the subscriber's sandbox.
 4. **Ensure Message Context:** Retain and propagate the routing key in subsequent inter-service communications to maintain context.
-### Step 5: Create Sandboxes
-1. **Create Publisher Sandbox:** Use Signadot to create a sandbox for the Publisher, enabling it to send sandbox-specific messages.
-2. **Create Subscriber Sandbox:** Use Signadot to create a sandbox for the Subscriber, ensuring it processes only relevant sandbox-specific messages.
-### Step 6: Test Sandbox Behavior
+### Step 6: Deploy Sandboxes
+- Create sandboxes for Publisher and Subscriber using Signadot to test isolated workflows.
+- Verify sandbox-specific message processing.
+### Step 7: Test Sandbox Behavior
 #### Scenario 1: Baseline Publisher and Baseline Subscriber
 - Send a message without a routing key.
 - Verify that only the baseline subscriber processes the message.
@@ -85,7 +103,7 @@
 - Enable sandbox environments for both the Publisher and Subscriber.
 - Send a message with a routing key.
 - Verify that only the sandbox Subscriber processes the message.
-### Step 7: Monitor and Debug
+### Step 8: Monitor and Debug
 1. **Log Observations:** Monitor logs in the frontend or Signadot dashboard to verify routing behavior.
 2. **Validation:** Confirm that routing keys effectively isolate messages between baseline and sandbox environments.
 ## Conclusion
