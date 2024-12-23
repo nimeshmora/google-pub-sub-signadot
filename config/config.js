@@ -7,7 +7,6 @@ module.exports = {
     // Addresses
     producerHost: process.env.PRODUCER_HOST || "producer.pubsub-demo.svc",
     redisURL: process.env.REDIS_URL || "redis://redis.pubsub-demo.svc:6379",
-    kafkaAddr: process.env.KAFKA_ADDR || "kafka-headless.kafka-demo.svc:9092",
     routeServerAddr: "routeserver.signadot.svc:7778",
 
     // Baseline
