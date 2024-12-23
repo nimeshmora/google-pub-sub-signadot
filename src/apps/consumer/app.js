@@ -17,8 +17,6 @@ async function runConsumer() {
         }
         let routingKey = extractRoutingKey(baggage);
 
-        console.log("debug pubsub", msg);
-
         if (!shouldProcess(routingKey)) {
             // skip this message
             return
