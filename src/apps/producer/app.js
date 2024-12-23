@@ -1,7 +1,6 @@
 const express = require('express');
-const { producerPort, kafkaTopic, consumerHost, consumerPort } = require('../../../config/config.js');
-const { publishMessage } = require('../../modules/kafka/kafka.js')
-const { publishMessagePub } = require('../../modules/pubsub/pubsub.js')
+const { producerPort, pubsubTopic } = require('../../../config/config.js');
+const { publishMessages } = require('../../modules/pubsub/pubsub.js')
 const { extractRoutingKey } = require('../../modules/otel/baggage.js');
 const { registerEvent } = require('../../modules/events/events.js');
 
@@ -34,23 +33,14 @@ function runProducer() {
 
         let routingKey = extractRoutingKey(req.get('baggage')); 
 
-        registerEvent('Publishing message to pubsub (topic=' + kafkaTopic +')', msg, routingKey,
+        registerEvent('Publishing message to pubsub (topic=' + pubsubTopic +')', msg, routingKey,
             () => { },
             (error) => errorHandler(res, error)
-        )        
+        )
 
-        // publishMessage(kafkaTopic, msg, { baggage: req.get('baggage') })
-        //     .then(() => {
-        //         console.log('debug Message successfully published to kafka')
-        //         // res.json({})
-        //     })
-        //     .catch((error) => errorHandler(res, error));
-
-        // console.log("debug /api/publish", JSON.stringify(msg), "published to topic", kafkaTopic);
-
-        publishMessagePub(kafkaTopic, msg, { baggage: req.get('baggage') })
+        publishMessages(pubsubTopic, msg, { baggage: req.get('baggage') })
             .then(() => {
-                console.log('debug Message successfully published to pubsub')
+                console.log('Message successfully published to pubsub')
                 res.json({})
             })
             .catch((error) => errorHandler(res, error));

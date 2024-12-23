@@ -1,4 +1,4 @@
-name: kafka-demo
+name: pubsub-demo
 spec:
   cluster: "@{cluster}"
   description: "route group containing the consumer and producer sandboxes together"
@@ -6,7 +6,7 @@ spec:
     any:
     - label:
         key: demo
-        value: kafka
+        value: pubsub
   endpoints:
   - name: frontend
-    target: http://frontend.kafka-demo.svc:4000
+    target: http://frontend.pubsub-demo.svc:4000

@@ -1,14 +1,14 @@
 name: consumer-sbx
 spec:
   labels:
-    demo: "kafka"
+    demo: "pubsub"
   cluster: "@{cluster}"
   forks:
   - forkOf:
       kind: Deployment
       name: consumer
-      namespace: kafka-demo
+      namespace: pubsub-demo
   defaultRouteGroup:
     endpoints:
     - name: frontend
-      target: http://frontend.kafka-demo.svc:4000
+      target: http://frontend.pubsub-demo.svc:4000

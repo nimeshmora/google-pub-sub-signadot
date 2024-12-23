@@ -1,39 +1,31 @@
-const { pubSubClient } = require('./pubsubConf.js');
-const { sandboxName, kafkaTopic } = require('./../../../config/config.js');
-const groupId = 'pubsub-signadot-group';
-
-// This sets the consumer group with suffix '-' + <sandbox-name> if running in
-// sandboxed workload, otherwise, it just returns the argument.
-function signadotConsumerGroup(signGroupId) {
-    // if (sandboxName !== "") {
-    //     signGroupId += signGroupId
-    // }
-    return signGroupId
-}   
+const { pubSubClient } = require('./pubsubClient.js');
+const { sandboxName, pubsubTopic } = require('./../../../config/config.js');
+const groupId = 'pub-sub-group';
 
 async function initializePubSubResources() { // wrapper
 
-    const subscriptionName = signadotConsumerGroup(groupId);
+    const subscriptionName = groupId;
 
     // Step 1: Create the topic if it doesn't exist
     try {
-        await pubSubClient.topic(kafkaTopic).get({ autoCreate: true });
-        console.log(`Topic '${kafkaTopic}' is ready.`);
+        await pubSubClient.topic(pubsubTopic).get({ autoCreate: true });
+        console.log(`Topic '${pubsubTopic}' is ready.`);
     } catch (error) {
-        console.error(`Error creating topic '${kafkaTopic}':`, error);
+        console.error(`Error creating topic '${pubsubTopic}':`, error);
     }
 
     // Step 2: Create the subscription if it doesn't exist
     try {
-        const [sub] = await pubSubClient.topic(kafkaTopic).getSubscriptions();
+        const [sub] = await pubSubClient.topic(pubsubTopic).getSubscriptions();
         const subscriptionExists = sub.some(s => s.name.split('/').pop() === subscriptionName);
         
         if (!subscriptionExists) {
-            await pubSubClient.createSubscription(kafkaTopic, subscriptionName, {
+            await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
                 enableExactlyOnceDelivery: true,
+                ackDeadlineSeconds: 300,
                 retryPolicy: {
                     minimumBackoff: {
-                        seconds: 60
+                        seconds: 2
                     },
                     maximumBackoff: {
                         seconds: 120
@@ -52,10 +44,8 @@ async function initializePubSubResources() { // wrapper
 }
 
 // Function to publish messages to a Pub/Sub topic
-const publishMessagePub = async (topicName, message, headers) => {
+const publishMessages = async (topicName, message, headers) => {
     try {
-
-        console.log("debug publishMessagePub", JSON.stringify(message), "published to topic", topicName);
 
         const dataBuffer = Buffer.from(JSON.stringify({
             value: JSON.stringify(message),
@@ -73,7 +63,7 @@ const publishMessagePub = async (topicName, message, headers) => {
 };
 
 // Function to process messages received from Pub/Sub
-const consumeMessagesPb = async (topicName, onNewMessage) => {
+const consumeMessages = async (topicName, onNewMessage) => {
     try {
         // Ensure the topic exists
         const topic = pubSubClient.topic(topicName);
@@ -93,7 +83,7 @@ const consumeMessagesPb = async (topicName, onNewMessage) => {
                 try {
                     let data = Buffer.from(message.data);                                                            
                     data = JSON.parse(data);
-                    console.log(`debug Received message from pubsub subscription ${subscription.name}:`, JSON.stringify(data));
+                    console.log(`Received message from pubsub subscription ${subscription.name}:`, JSON.stringify(data));
 
                     // Acknowledge the message
                     message.ack();
@@ -120,7 +110,7 @@ const consumeMessagesPb = async (topicName, onNewMessage) => {
 
 module.exports = {
     initializePubSubResources: initializePubSubResources,
-    signadotConsumerGroup: signadotConsumerGroup,
-    publishMessagePub: publishMessagePub,
-    consumeMessagesPb: consumeMessagesPb
+    signadotConsumerGroup: groupId,
+    publishMessages: publishMessages,
+    consumeMessages: consumeMessages
 }
