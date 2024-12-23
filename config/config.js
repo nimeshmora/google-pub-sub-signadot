@@ -21,5 +21,6 @@ module.exports = {
     sandboxName: process.env.SIGNADOT_SANDBOX_NAME || "",
 
     // Kafka
-    kafkaTopic: process.env.KAFKA_TOPIC || "pubsub-signadot-demo"
+    kafkaTopic: process.env.KAFKA_TOPIC || "pubsub-signadot-demo",
+    pubsubTopic: process.env.KAFKA_TOPIC || "pubsub-signadot-demo"
 }
