@@ -1,5 +1,5 @@
-const { pubSubClient } = require('./pubsubConf.js');
-const { sandboxName, kafkaTopic } = require('./../../../config/config.js');
+const { pubSubClient } = require('./pubsubClient.js');
+const { sandboxName, pubsubTopic } = require('./../../../config/config.js');
 const groupId = 'pubsub-signadot-group';
 
 // This sets the consumer group with suffix '-' + <sandbox-name> if running in
@@ -17,19 +17,19 @@ async function initializePubSubResources() { // wrapper
 
     // Step 1: Create the topic if it doesn't exist
     try {
-        await pubSubClient.topic(kafkaTopic).get({ autoCreate: true });
-        console.log(`Topic '${kafkaTopic}' is ready.`);
+        await pubSubClient.topic(pubsubTopic).get({ autoCreate: true });
+        console.log(`Topic '${pubsubTopic}' is ready.`);
     } catch (error) {
-        console.error(`Error creating topic '${kafkaTopic}':`, error);
+        console.error(`Error creating topic '${pubsubTopic}':`, error);
     }
 
     // Step 2: Create the subscription if it doesn't exist
     try {
-        const [sub] = await pubSubClient.topic(kafkaTopic).getSubscriptions();
+        const [sub] = await pubSubClient.topic(pubsubTopic).getSubscriptions();
         const subscriptionExists = sub.some(s => s.name.split('/').pop() === subscriptionName);
         
         if (!subscriptionExists) {
-            await pubSubClient.createSubscription(kafkaTopic, subscriptionName, {
+            await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
                 enableExactlyOnceDelivery: true,
                 retryPolicy: {
                     minimumBackoff: {
