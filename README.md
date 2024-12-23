@@ -76,13 +76,18 @@ Name: `pubsub-demo`
 
 Description: `route group containing the consumer and producer sandboxes together`
 
-Match:
+Match:  
+
     label name: `demo`
+
     value: `pubsub`
 
-Endpoints:
+Endpoints:  
+
     name: `frontend`
+
     protocol: `http`
+    
     url: `frontend.pubsub-demo.svc:4000`
 
 Check `K8's cluster` this will add additional two pods in the cluster 
