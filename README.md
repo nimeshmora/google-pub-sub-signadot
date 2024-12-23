@@ -68,9 +68,9 @@ Go to `[Signadot Dashboard]` (https://app.signadot.com/).
 Login to `[Signadot Dashboard]` then Navigate to cluster section and follow the instruction which is provided
 it will connect with your k8's cluster
 
-then navigate to the `Sandboxes` section, copy and past configuration in the `signadot/sandboxes/consumer.yaml` and `signadot/sandboxes/consumer.yaml`.
+Then navigate to the `Sandboxes` section, copy and past configuration in the `signadot/sandboxes/consumer.yaml` and `signadot/sandboxes/consumer.yaml`.
 
-then navigate into the `Router Groups` section and add following infomation
+Then navigate into the `Router Groups` section and add following infomation
 
 Name: `pubsub-demo`
 Description: `route group containing the consumer and producer sandboxes together`
