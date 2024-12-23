@@ -3,7 +3,7 @@ SHELL = /bin/sh
 
 
 build:
-	docker build -t signadot/pubsub-demo:v72 .
+	docker build -t signadot/pubsub-demo:latest .
 
 build-multi-arch:
 	docker build -t signadot/pubsub-demo:latest-linux-amd64 \
