@@ -31,9 +31,10 @@ async function initializePubSubResources() { // wrapper
         if (!subscriptionExists) {
             await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
                 enableExactlyOnceDelivery: true,
+                ackDeadlineSeconds: 300,
                 retryPolicy: {
                     minimumBackoff: {
-                        seconds: 60
+                        seconds: 2
                     },
                     maximumBackoff: {
                         seconds: 120
