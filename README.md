@@ -60,3 +60,43 @@ gcloud iam service-accounts add-iam-policy-binding <service account email> \
     --project=<project id>
 kubectl -n pubsub-demo apply -f k8s/pieces
 ```
+
+Now, That needs to connect `[cluster]` with Signadot then create some sandboxes and route groups 
+to perform some tests.
+Go to `[Signadot Dashboard]` (https://app.signadot.com/).
+
+Login to `[Signadot Dashboard]` then Navigate to cluster section and follow the instruction which is provided
+it will connect with your k8's cluster
+
+then navigate to the `Sandboxes` section, copy and past configuration in the `signadot/sandboxes/consumer.yaml` and `signadot/sandboxes/consumer.yaml`.
+
+then navigate into the `Router Groups` section and add following infomation
+
+Name: `pubsub-demo`
+Description: `route group containing the consumer and producer sandboxes together`
+Match:
+    label name: `demo`
+    value: `pubsub`
+Endpoints:
+    name: `frontend`
+    protocol: `http`
+    url: `frontend.pubsub-demo.svc:4000`
+
+`Check K8's cluster` this will add additional two pods in the cluster 
+
+Alternatively, you can install the [Signadot Browser
+Extension](https://www.signadot.com/docs/browser-extensions) and create a
+port-forward to the `frontend` service:
+
+```sh
+kubectl port-forward service/frontend -n pubsub-demo 4000:4000
+```
+
+Open a browser at http://localhost:4000/, and use the Signadot extension to set
+your routing context.
+
+To uninstall:
+
+```sh
+kubectl -n pubsub-demo delete -f k8s/pieces
+```
