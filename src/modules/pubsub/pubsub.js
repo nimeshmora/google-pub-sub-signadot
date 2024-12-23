@@ -1,13 +1,13 @@
 const { pubSubClient } = require('./pubsubClient.js');
 const { sandboxName, pubsubTopic } = require('./../../../config/config.js');
-const groupId = 'pubsub-signadot-group';
+const groupId = 'pub-sub-group';
 
 // This sets the consumer group with suffix '-' + <sandbox-name> if running in
 // sandboxed workload, otherwise, it just returns the argument.
 function signadotConsumerGroup(signGroupId) {
-    // if (sandboxName !== "") {
-    //     signGroupId += signGroupId
-    // }
+    if (sandboxName !== "") {
+        signGroupId += signGroupId
+    }
     return signGroupId
 }   
 

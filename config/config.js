@@ -17,5 +17,5 @@ module.exports = {
     // Sandbox
     sandboxName: process.env.SIGNADOT_SANDBOX_NAME || "",
 
-    pubsubTopic: process.env.PUBSUB_TOPIC || "google-pubsub-demo"
+    pubsubTopic: process.env.PUBSUB_TOPIC || "pub-sub-demo"
 }
