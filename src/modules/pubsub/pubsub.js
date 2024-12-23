@@ -2,18 +2,9 @@ const { pubSubClient } = require('./pubsubClient.js');
 const { sandboxName, pubsubTopic } = require('./../../../config/config.js');
 const groupId = 'pub-sub-group';
 
-// This sets the consumer group with suffix '-' + <sandbox-name> if running in
-// sandboxed workload, otherwise, it just returns the argument.
-function signadotConsumerGroup(signGroupId) {
-    if (sandboxName !== "") {
-        signGroupId += signGroupId
-    }
-    return signGroupId
-}   
-
 async function initializePubSubResources() { // wrapper
 
-    const subscriptionName = signadotConsumerGroup(groupId);
+    const subscriptionName = groupId;
 
     // Step 1: Create the topic if it doesn't exist
     try {
@@ -119,7 +110,7 @@ const consumeMessages = async (topicName, onNewMessage) => {
 
 module.exports = {
     initializePubSubResources: initializePubSubResources,
-    signadotConsumerGroup: signadotConsumerGroup,
+    signadotConsumerGroup: groupId,
     publishMessages: publishMessages,
     consumeMessages: consumeMessages
 }
