@@ -72,17 +72,20 @@ Then navigate to the `Sandboxes` section, copy and past configuration in the `si
 
 Then navigate into the `Router Groups` section and add following infomation
 
-Name: `pubsub-demo` \n
+Name: `pubsub-demo`
+
 Description: `route group containing the consumer and producer sandboxes together`
+
 Match:
     label name: `demo`
     value: `pubsub`
+
 Endpoints:
     name: `frontend`
     protocol: `http`
     url: `frontend.pubsub-demo.svc:4000`
 
-`Check K8's cluster` this will add additional two pods in the cluster 
+Check `K8's cluster` this will add additional two pods in the cluster 
 
 Alternatively, you can install the [Signadot Browser
 Extension](https://www.signadot.com/docs/browser-extensions) and create a
