@@ -27,7 +27,7 @@ events in the `Redis` server.
 Finally the `frontend` reads those logs and displays them on the UI (the browser
 will pull the `frontend` API every two seconds).
 
-![image](./docs/images/architecturediagram.png)
+![image](./docs/images/architecture.png)
 
 ## Running
 
