@@ -74,7 +74,7 @@
 6. **Expose the Frontend:**
    - Forward the frontend service to enable interaction with the demo application.
    ```bash
-   kubectl port-forward svc/frontend 8080:80
+   kubectl port-forward svc/frontend 8080:40000
    ```
 ### Step 3: Test Baseline Behavior Without Sandboxes
 1. **Access the Frontend:** Open the frontend in a browser.
