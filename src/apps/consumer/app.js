@@ -1,8 +1,7 @@
 const { pubsubTopic } = require('../../../config/config.js');
 const { extractRoutingKey } = require('../../modules/otel/baggage.js');
 const { registerEvent } = require('../../modules/events/events.js');
-const { initializePubSubResources } = require('../../modules/pubsub/pubsub.js')
-const { consumeMessages } = require('../../modules/pubsub/pubsub.js');
+const { initializePubSubResources, consumeMessages } = require('../../modules/pubsub/pubsub.js')
 const { run, shouldProcess } = require('../../modules/routesapi-mq-client/pullrouter.js')
 
 async function runConsumer() {       
