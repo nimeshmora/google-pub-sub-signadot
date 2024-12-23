@@ -72,7 +72,7 @@ Then navigate to the `Sandboxes` section, copy and past configuration in the `si
 
 Then navigate into the `Router Groups` section and add following infomation
 
-Name: `pubsub-demo`
+Name: `pubsub-demo` \n
 Description: `route group containing the consumer and producer sandboxes together`
 Match:
     label name: `demo`
