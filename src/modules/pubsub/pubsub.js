@@ -52,10 +52,8 @@ async function initializePubSubResources() { // wrapper
 }
 
 // Function to publish messages to a Pub/Sub topic
-const publishMessagePub = async (topicName, message, headers) => {
+const publishMessages = async (topicName, message, headers) => {
     try {
-
-        console.log("debug publishMessagePub", JSON.stringify(message), "published to topic", topicName);
 
         const dataBuffer = Buffer.from(JSON.stringify({
             value: JSON.stringify(message),
@@ -73,7 +71,7 @@ const publishMessagePub = async (topicName, message, headers) => {
 };
 
 // Function to process messages received from Pub/Sub
-const consumeMessagesPb = async (topicName, onNewMessage) => {
+const consumeMessages = async (topicName, onNewMessage) => {
     try {
         // Ensure the topic exists
         const topic = pubSubClient.topic(topicName);
@@ -93,7 +91,7 @@ const consumeMessagesPb = async (topicName, onNewMessage) => {
                 try {
                     let data = Buffer.from(message.data);                                                            
                     data = JSON.parse(data);
-                    console.log(`debug Received message from pubsub subscription ${subscription.name}:`, JSON.stringify(data));
+                    console.log(`Received message from pubsub subscription ${subscription.name}:`, JSON.stringify(data));
 
                     // Acknowledge the message
                     message.ack();
@@ -121,6 +119,6 @@ const consumeMessagesPb = async (topicName, onNewMessage) => {
 module.exports = {
     initializePubSubResources: initializePubSubResources,
     signadotConsumerGroup: signadotConsumerGroup,
-    publishMessagePub: publishMessagePub,
-    consumeMessagesPb: consumeMessagesPb
+    publishMessages: publishMessages,
+    consumeMessages: consumeMessages
 }
