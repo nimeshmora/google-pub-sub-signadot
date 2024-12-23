@@ -31,10 +31,7 @@ will pull the `frontend` API every two seconds).
 
 ## Running
 
-First, [install Signadot Operator](https://docs.signadot.com/docs/installation)
-if you haven't already.
-
-Second, install the provided manifests in the `k8s` directory
+First, install the provided manifests in the `k8s` directory
 
 Go to `IAM & Admin` in the Google Cloud Console.
 
