@@ -2,10 +2,19 @@ const { pubSubClient } = require('./pubsubClient.js');
 const { sandboxName, pubsubTopic } = require('./../../../config/config.js');
 const groupId = 'pub-sub-group';
 
-async function initializePubSubResources() { // wrapper
+// This sets the consumer group with suffix '-' + <sandbox-name> if running in
+// sandboxed workload, otherwise, it just returns the argument.
+function signadotConsumerGroup(sGroupId) {
+    
+    if (sandboxName !== "") {
+        sGroupId += sGroupId
+    }
+    return sGroupId
+}
 
-    const subscriptionName = groupId;
-
+async function initializePubSubResources(routerKeys) { // wrapper
+    const subscriptionName = signadotConsumerGroup(groupId);
+    
     // Step 1: Create the topic if it doesn't exist
     try {
         await pubSubClient.topic(pubsubTopic).get({ autoCreate: true });
@@ -18,9 +27,30 @@ async function initializePubSubResources() { // wrapper
     try {
         const [sub] = await pubSubClient.topic(pubsubTopic).getSubscriptions();
         const subscriptionExists = sub.some(s => s.name.split('/').pop() === subscriptionName);
-        
+
+        if(subscriptionExists) {
+            await pubSubClient.topic(pubsubTopic).subscription(subscriptionName).delete();
+            await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
+                filter: routerKeys.length <= 0 ? `attributes.kind="baseline"` : routerKeys.map(x => `attributes.kind="${x}"`).join(' OR '),
+                enableExactlyOnceDelivery: true,
+                ackDeadlineSeconds: 300,
+                retryPolicy: {
+                    minimumBackoff: {
+                        seconds: 2
+                    },
+                    maximumBackoff: {
+                        seconds: 120
+                    }
+                }          
+            })
+            .catch(ex => {
+                console.log(ex);                
+            })
+        }
+
         if (!subscriptionExists) {
             await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
+                filter: routerKeys.length <= 0 ? `attributes.kind="baseline"` : routerKeys.map(x => `attributes.kind="${x}"`).join(' OR '),
                 enableExactlyOnceDelivery: true,
                 ackDeadlineSeconds: 300,
                 retryPolicy: {
@@ -44,9 +74,9 @@ async function initializePubSubResources() { // wrapper
 }
 
 // Function to publish messages to a Pub/Sub topic
-const publishMessages = async (topicName, message, headers) => {
+const publishMessages = async (topicName, message, headers, routingKey) => {
     try {
-
+        let noRtKey = routingKey === undefined || routingKey === null;
         const dataBuffer = Buffer.from(JSON.stringify({
             value: JSON.stringify(message),
             headers: headers || {}, // Include headers if provided, or an empty object
@@ -54,7 +84,10 @@ const publishMessages = async (topicName, message, headers) => {
 
         // Publish a message to the specified topic with attributes
         const messageId = await pubSubClient.topic(topicName).publishMessage({
-            data: dataBuffer
+            data: dataBuffer,
+            attributes: {
+                kind: `${(noRtKey && sandboxName === "") || (!noRtKey && sandboxName !== "")? 'baseline' : routingKey}`
+            }
         });
         
     } catch (error) {

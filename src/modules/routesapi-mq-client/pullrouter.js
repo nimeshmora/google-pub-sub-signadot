@@ -81,10 +81,16 @@ function shouldProcess(routingKey) {
     }
     // we are a baseline workload, ignore received routing keys (they belong
     // to sandboxed workloads)
-    return !routingKeys.has(routingKey)
+    return !routingKeys?.has(routingKey)
+}
+
+function getRoutingKeys(){
+    const routingKeys = cache.get('routingKeys');    
+    return routingKeys ? Array.from(routingKeys) : [];
 }
 
 module.exports = {
     run: run,
     shouldProcess: shouldProcess,
+    getRoutingKeys: getRoutingKeys
 };

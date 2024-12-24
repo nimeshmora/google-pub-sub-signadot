@@ -23,7 +23,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: consumer
-          image: signadot/pubsub-demo:latest
+          image: asia-docker.pkg.dev/itone-295207/casino-backend/signadot/pubsub-demo:v91
           command:
             - "npm"
             - "run"
