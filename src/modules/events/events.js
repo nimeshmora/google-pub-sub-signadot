@@ -114,7 +114,18 @@ function getEvents(eventsCursor, cursor, onSuccess, onError) {
     collectEvents(cursor);
 }
 
+function setKeys(key, value){
+    redisClient.set(key, value);
+}
+
+async function getKeys(key) {
+    let value = await redisClient.get(key)
+    return value
+}
+
 module.exports = {
     registerEvent: registerEvent,
     getEvents: getEvents,
+    setKeys: setKeys,
+    getKeys: getKeys
 }

@@ -44,7 +44,8 @@ function runFrontend() {
                 console.error(error);
             }
         )
-
+        console.log("debug", producerHost);
+        
         // This endpoint is a passthru to the producer API
         const options = {
             hostname: producerHost,

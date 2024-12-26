@@ -1,10 +1,39 @@
 const { pubSubClient } = require('./pubsubClient.js');
 const { sandboxName, pubsubTopic } = require('./../../../config/config.js');
-const groupId = 'pub-sub-group';
+const groupId = 'pubsub-grp';
 
-async function initializePubSubResources() { // wrapper
+// This sets the consumer group with suffix '-' + <sandbox-name> + '-' + routerKeys if running in
+// sandboxed workload, otherwise, it just returns the argument.
+function signadotConsumerGroup(sGroupId, routerKeys) {
+    
+    if (sandboxName !== "") {
+        sGroupId += '-' + sandboxName + '-' + routerKeys
+    }
+    return sGroupId
+}
 
-    const subscriptionName = groupId;
+async function createSubscription(subscriptionName, routerKeys){
+    let [subscription] = await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
+        filter: routerKeys.length <= 0 ? `attributes.kind="baseline"` : routerKeys.map(x => `attributes.kind="${x}"`).join(' OR '),
+        enableExactlyOnceDelivery: true,
+        ackDeadlineSeconds: 300,
+        retryPolicy: {
+            minimumBackoff: {
+                seconds: 2
+            },
+            maximumBackoff: {
+                seconds: 120
+            }
+        }          
+    })
+    .catch(ex => {
+        console.log(ex);                
+    })
+    return subscription;
+}
+
+async function initializePubSubResources(routerKeys, callback) { // wrapper
+    let subscriptionName = signadotConsumerGroup(groupId, routerKeys.map(x => `-${x}`).join('-'));
 
     // Step 1: Create the topic if it doesn't exist
     try {
@@ -18,43 +47,47 @@ async function initializePubSubResources() { // wrapper
     try {
         const [sub] = await pubSubClient.topic(pubsubTopic).getSubscriptions();
         const subscriptionExists = sub.some(s => s.name.split('/').pop() === subscriptionName);
-        
+        let subscription;
         if (!subscriptionExists) {
-            await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
-                enableExactlyOnceDelivery: true,
-                ackDeadlineSeconds: 300,
-                retryPolicy: {
-                    minimumBackoff: {
-                        seconds: 2
-                    },
-                    maximumBackoff: {
-                        seconds: 120
-                    }
-                }          
-            })
-            .catch(ex => {
-                console.log(ex);                
-            })
+            subscription = await createSubscription(subscriptionName, routerKeys)
+        }
+        else{
+            // Fetch the existing subscription
+            subscription = pubSubClient.subscription(subscriptionName);
+            console.log(`Listening to existing subscription: ${subscription.name}`);
         }
 
-        console.log(`Subscription '${subscriptionName}' is ready.`);
+        if (subscription) {
+            // Set up message listener
+            subscription.on('message', callback);
+    
+            // Set up error listener
+            subscription.on('error', (error) => {
+                console.error(`Subscription error: ${error.message}`);
+            });
+    
+            console.log(`Subscription '${subscriptionName}' is now active.`);
+        }
     } catch (error) {
         console.error(`Error creating subscription '${subscriptionName}':`, error);
     }
 }
 
 // Function to publish messages to a Pub/Sub topic
-const publishMessages = async (topicName, message, headers) => {
+const publishMessages = async (topicName, message, headers, routingKey) => {
     try {
-
+        let noRtKey = routingKey === undefined || routingKey === null;
         const dataBuffer = Buffer.from(JSON.stringify({
             value: JSON.stringify(message),
             headers: headers || {}, // Include headers if provided, or an empty object
         }));
 
         // Publish a message to the specified topic with attributes
-        const messageId = await pubSubClient.topic(topicName).publishMessage({
-            data: dataBuffer
+        await pubSubClient.topic(topicName).publishMessage({
+            data: dataBuffer,
+            attributes: {
+                kind: `${(noRtKey && sandboxName === "") || (!noRtKey && sandboxName !== "")? 'baseline' : routingKey}`
+            }
         });
         
     } catch (error) {
@@ -62,55 +95,7 @@ const publishMessages = async (topicName, message, headers) => {
     }
 };
 
-// Function to process messages received from Pub/Sub
-const consumeMessages = async (topicName, onNewMessage) => {
-    try {
-        // Ensure the topic exists
-        const topic = pubSubClient.topic(topicName);
-        const [subscriptions] = await topic.getSubscriptions();
-                
-        if (subscriptions.length === 0) {
-            console.warn(`No subscriptions found for topic: ${topicName}`);
-            return;
-        }
-
-        // Iterate through all subscriptions and attach message listeners
-        subscriptions.forEach(subscription => {
-            console.log(`Listening to subscription: ${subscription.name}`);
-
-            // Event listener for incoming messages
-            subscription.on('message', message => {
-                try {
-                    let data = Buffer.from(message.data);                                                            
-                    data = JSON.parse(data);
-                    console.log(`Received message from pubsub subscription ${subscription.name}:`, JSON.stringify(data));
-
-                    // Acknowledge the message
-                    message.ack();
-
-                    // Process the message
-                    onNewMessage(JSON.parse(data.value), data.headers);
-
-                    
-                } catch (error) {
-                    message.nack();
-                    console.error(`Error processing message from subscription ${subscription.name}:`, error);
-                }
-            });
-
-            // Event listener for subscription errors
-            subscription.on('error', error => {
-                console.error(`Error in subscription ${subscription.name}:`, error);
-            });
-        });
-    } catch (error) {
-        console.error(`Error setting up listeners for topic ${topicName}:`, error);
-    }
-};
-
 module.exports = {
     initializePubSubResources: initializePubSubResources,
-    signadotConsumerGroup: groupId,
-    publishMessages: publishMessages,
-    consumeMessages: consumeMessages
+    publishMessages: publishMessages
 }
