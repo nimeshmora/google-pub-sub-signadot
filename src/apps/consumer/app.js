@@ -1,8 +1,8 @@
 const { pubsubTopic } = require('../../../config/config.js');
 const { extractRoutingKey } = require('../../modules/otel/baggage.js');
 const { registerEvent } = require('../../modules/events/events.js');
-const { initializePubSubResources, consumeMessages } = require('../../modules/pubsub/pubsub.js')
-const { run, shouldProcess, getRoutingKeys } = require('../../modules/routesapi-mq-client/pullrouter.js')
+const { initializePubSubResources } = require('../../modules/pubsub/pubsub.js')
+const { run, shouldProcess, getRoutingKeys, setExistingListeners } = require('../../modules/routesapi-mq-client/pullrouter.js')
 const { sandboxName } = require('../../../config/config.js');
 
 const consumerListener = (msg, headers) => {
@@ -23,22 +23,41 @@ const consumerListener = (msg, headers) => {
     )
 }
 
+function callbackListener(message) {
+    try {
+        let data = Buffer.from(message.data);                                                            
+        data = JSON.parse(data);
+        console.log(`Received message from pubsub subscription:`, JSON.stringify(data));
+
+        // Acknowledge the message
+        message.ack();
+
+        // Process the message
+        consumerListener(JSON.parse(data.value), data.headers);
+
+        
+    } catch (error) {
+        message.nack();
+        console.error(`Error processing message from subscription:`, error);
+    }
+}
+
 async function runConsumer() {       
     // start the router
     run();
-    if(sandboxName !== ""){ 
-        let keyLength = 0;
+    if(sandboxName !== ""){
         setInterval(async () => {           
-            let routingKeys = getRoutingKeys();
-            if(keyLength !== routingKeys.length){
-                await initializePubSubResources(routingKeys);
-                consumeMessages(pubsubTopic, consumerListener);
+            let routingKeys = getRoutingKeys('routingKeys');
+            let existingRoutingKeys = getRoutingKeys('existRouterKeys');
+            console.log("debug", existingRoutingKeys?.join('-'), "end debug");            
+            let subscriptionKeys = routingKeys.filter(item => !existingRoutingKeys.includes(item));
+            if(subscriptionKeys.length > 0){
+                await initializePubSubResources(routingKeys, callbackListener);
             }
-            keyLength = routingKeys.length;
+            setExistingListeners(routingKeys);
         }, 2000);
     }else{
-        await initializePubSubResources([]);
-        consumeMessages(pubsubTopic, consumerListener);
+        await initializePubSubResources([], callbackListener);
     }    
 }
 

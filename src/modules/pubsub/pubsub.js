@@ -1,19 +1,20 @@
 const { pubSubClient } = require('./pubsubClient.js');
 const { sandboxName, pubsubTopic } = require('./../../../config/config.js');
-const groupId = 'pub-sub-group';
+const groupId = 'pubsub-grp';
 
 // This sets the consumer group with suffix '-' + <sandbox-name> if running in
 // sandboxed workload, otherwise, it just returns the argument.
 function signadotConsumerGroup(sGroupId) {
     
     if (sandboxName !== "") {
-        sGroupId += sGroupId
+        sGroupId += '-' + sandboxName
     }
     return sGroupId
 }
 
-async function initializePubSubResources(routerKeys) { // wrapper
-    const subscriptionName = signadotConsumerGroup(groupId);
+async function initializePubSubResources(routerKeys, callback) { // wrapper
+    let subscriptionName = signadotConsumerGroup(groupId);
+    subscriptionName += routerKeys.map(x => `-${x}`).join('-')
     
     // Step 1: Create the topic if it doesn't exist
     try {
@@ -27,29 +28,9 @@ async function initializePubSubResources(routerKeys) { // wrapper
     try {
         const [sub] = await pubSubClient.topic(pubsubTopic).getSubscriptions();
         const subscriptionExists = sub.some(s => s.name.split('/').pop() === subscriptionName);
-
-        if(subscriptionExists) {
-            await pubSubClient.topic(pubsubTopic).subscription(subscriptionName).delete();
-            await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
-                filter: routerKeys.length <= 0 ? `attributes.kind="baseline"` : routerKeys.map(x => `attributes.kind="${x}"`).join(' OR '),
-                enableExactlyOnceDelivery: true,
-                ackDeadlineSeconds: 300,
-                retryPolicy: {
-                    minimumBackoff: {
-                        seconds: 2
-                    },
-                    maximumBackoff: {
-                        seconds: 120
-                    }
-                }          
-            })
-            .catch(ex => {
-                console.log(ex);                
-            })
-        }
-
+        let subscription;
         if (!subscriptionExists) {
-            await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
+            [subscription] = await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
                 filter: routerKeys.length <= 0 ? `attributes.kind="baseline"` : routerKeys.map(x => `attributes.kind="${x}"`).join(' OR '),
                 enableExactlyOnceDelivery: true,
                 ackDeadlineSeconds: 300,
@@ -65,9 +46,25 @@ async function initializePubSubResources(routerKeys) { // wrapper
             .catch(ex => {
                 console.log(ex);                
             })
+            
+        }
+        else{
+            // Fetch the existing subscription
+            subscription = pubSubClient.subscription(subscriptionName);
+            console.log(`Listening to existing subscription: ${subscription.name}`);
         }
 
-        console.log(`Subscription '${subscriptionName}' is ready.`);
+        if (subscription) {
+            // Set up message listener
+            subscription.on('message', callback);
+    
+            // Set up error listener
+            subscription.on('error', (error) => {
+                console.error(`Subscription error: ${error.message}`);
+            });
+    
+            console.log(`Subscription '${subscriptionName}' is now active.`);
+        }
     } catch (error) {
         console.error(`Error creating subscription '${subscriptionName}':`, error);
     }
@@ -83,7 +80,7 @@ const publishMessages = async (topicName, message, headers, routingKey) => {
         }));
 
         // Publish a message to the specified topic with attributes
-        const messageId = await pubSubClient.topic(topicName).publishMessage({
+        await pubSubClient.topic(topicName).publishMessage({
             data: dataBuffer,
             attributes: {
                 kind: `${(noRtKey && sandboxName === "") || (!noRtKey && sandboxName !== "")? 'baseline' : routingKey}`
@@ -96,54 +93,36 @@ const publishMessages = async (topicName, message, headers, routingKey) => {
 };
 
 // Function to process messages received from Pub/Sub
-const consumeMessages = async (topicName, onNewMessage) => {
-    try {
-        // Ensure the topic exists
-        const topic = pubSubClient.topic(topicName);
-        const [subscriptions] = await topic.getSubscriptions();
+// const consumeMessages = async (topicName, onNewMessage) => {
+//     try {
+//         // Ensure the topic exists
+//         const topic = pubSubClient.topic(topicName);
+//         const [subscriptions] = await topic.getSubscriptions();
                 
-        if (subscriptions.length === 0) {
-            console.warn(`No subscriptions found for topic: ${topicName}`);
-            return;
-        }
+//         if (subscriptions.length === 0) {
+//             console.warn(`No subscriptions found for topic: ${topicName}`);
+//             return;
+//         }
 
-        // Iterate through all subscriptions and attach message listeners
-        subscriptions.forEach(subscription => {
-            console.log(`Listening to subscription: ${subscription.name}`);
+//         // Iterate through all subscriptions and attach message listeners
+//         subscriptions.forEach(subscription => {
+//             console.log(`Listening to subscription: ${subscription.name}`);
 
-            // Event listener for incoming messages
-            subscription.on('message', message => {
-                try {
-                    let data = Buffer.from(message.data);                                                            
-                    data = JSON.parse(data);
-                    console.log(`Received message from pubsub subscription ${subscription.name}:`, JSON.stringify(data));
+//             // Event listener for incoming messages
+//             subscription.on('message', );
 
-                    // Acknowledge the message
-                    message.ack();
-
-                    // Process the message
-                    onNewMessage(JSON.parse(data.value), data.headers);
-
-                    
-                } catch (error) {
-                    message.nack();
-                    console.error(`Error processing message from subscription ${subscription.name}:`, error);
-                }
-            });
-
-            // Event listener for subscription errors
-            subscription.on('error', error => {
-                console.error(`Error in subscription ${subscription.name}:`, error);
-            });
-        });
-    } catch (error) {
-        console.error(`Error setting up listeners for topic ${topicName}:`, error);
-    }
-};
+//             // Event listener for subscription errors
+//             subscription.on('error', error => {
+//                 console.error(`Error in subscription ${subscription.name}:`, error);
+//             });
+//         });
+//     } catch (error) {
+//         console.error(`Error setting up listeners for topic ${topicName}:`, error);
+//     }
+// };
 
 module.exports = {
     initializePubSubResources: initializePubSubResources,
     signadotConsumerGroup: groupId,
-    publishMessages: publishMessages,
-    consumeMessages: consumeMessages
+    publishMessages: publishMessages
 }
