@@ -97,6 +97,5 @@ const publishMessages = async (topicName, message, headers, routingKey) => {
 
 module.exports = {
     initializePubSubResources: initializePubSubResources,
-    signadotConsumerGroup: groupId,
     publishMessages: publishMessages
 }
