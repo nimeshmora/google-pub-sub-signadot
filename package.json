@@ -5,8 +5,8 @@
   "main": "app.js",
   "scripts": {
     "frontend": "node app.js --frontend",
-    "producer": "node app.js --producer",
-    "consumer": "node app.js --consumer",
+    "publisher": "node app.js --publisher",
+    "subscriber": "node app.js --subscriber",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

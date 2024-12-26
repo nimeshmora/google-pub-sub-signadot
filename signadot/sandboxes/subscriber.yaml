@@ -1,4 +1,4 @@
-name: consumer-sbx
+name: subscriber-sbx
 spec:
   labels:
     demo: "pubsub"
@@ -6,7 +6,7 @@ spec:
   forks:
   - forkOf:
       kind: Deployment
-      name: consumer
+      name: subscriber
       namespace: pubsub-demo
   defaultRouteGroup:
     endpoints:

@@ -1,4 +1,4 @@
-name: producer-sbx
+name: publisher-sbx
 spec:
   labels:
     demo: "pubsub"
@@ -6,7 +6,7 @@ spec:
   forks:
   - forkOf:
       kind: Deployment
-      name: producer
+      name: publisher
       namespace: pubsub-demo
   defaultRouteGroup:
     endpoints:

@@ -1,7 +1,7 @@
 name: pubsub-demo
 spec:
   cluster: "@{cluster}"
-  description: "route group containing the consumer and producer sandboxes together"
+  description: "route group containing the subscriber and publisher sandboxes together"
   match:
     any:
     - label:

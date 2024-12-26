@@ -4,18 +4,18 @@ This is a sample application to demonstrate how Signadot sandboxes can be used
 in the case of cloud-native applications with asynchronous architectures.
 
 This application is formed by three microservices, the `frontend`, the
-`producer`, and the `consumer`, one `Google Manage Pub/Sub Instance`, and one `Redis` server.
+`publisher`, and the `subscriber`, one `Google Manage Pub/Sub Instance`, and one `Redis` server.
 
 The `frontend` exposes an HTTP server from where static content (HTML, images)
 can be accessed, and a minimal REST API with two different methods, one for
 publishing a message, and another for getting log entries.
 
-The `producer` exposes a REST API with a single method that is called from the
+The `publisher` exposes a REST API with a single method that is called from the
 frontend, every time a user submits a new message. Upon receiving a request it
 publishes the message in `PubSub` with the provided information (by default in
 the topic `pubsub-demo`).
 
-The `consumer` will perform a selective consumption of messages from `PubSub`.
+The `subscriber` will perform a selective consumption of messages from `PubSub`.
 Said selective consumption logic will use the [Signadot Routes
 API](https://github.com/signadot/routesapi) (the REST version of it) to get the
 required information to define if one message should be processed or not.
@@ -68,13 +68,13 @@ Go to `[Signadot Dashboard]` (https://app.signadot.com/).
 Login to `[Signadot Dashboard]` then Navigate to cluster section and follow the instruction which is provided
 it will connect with your k8's cluster
 
-Then navigate to the `Sandboxes` section, copy and past configuration in the `signadot/sandboxes/consumer.yaml` and `signadot/sandboxes/consumer.yaml`.
+Then navigate to the `Sandboxes` section, copy and past configuration in the `signadot/sandboxes/subscriber.yaml` and `signadot/sandboxes/subscriber.yaml`.
 
 Then navigate into the `Router Groups` section and add following infomation
 
 Name: `pubsub-demo`
 
-Description: `route group containing the consumer and producer sandboxes together`
+Description: `route group containing the subscriber and publisher sandboxes together`
 
 Match:  
 

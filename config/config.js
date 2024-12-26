@@ -5,7 +5,7 @@ module.exports = {
     producerPort: process.env.PRODUCER_PORT || 4001,
 
     // Addresses
-    producerHost: process.env.PRODUCER_HOST || "producer.pubsub-demo.svc",
+    producerHost: process.env.PRODUCER_HOST || "publisher.pubsub-demo.svc",
     redisURL: process.env.REDIS_URL || "redis://redis.pubsub-demo.svc:6379",
     routeServerAddr: "routeserver.signadot.svc:7778",
 
