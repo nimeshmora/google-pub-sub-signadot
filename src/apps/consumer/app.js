@@ -48,14 +48,13 @@ async function runConsumer() {
     if(sandboxName !== ""){
         setInterval(async () => {           
             let routingKeys = getRoutingKeys('routingKeys');
-            let existingRoutingKeys = getRoutingKeys('existRouterKeys');
-            console.log("debug", existingRoutingKeys?.join('-'), "end debug");            
-            let subscriptionKeys = routingKeys.filter(item => !existingRoutingKeys.includes(item));
-            if(subscriptionKeys.length > 0){
-                await initializePubSubResources(routingKeys, callbackListener);
-            }
+            let existingRoutingKeys = getRoutingKeys('existRouterKeys');         
+            let newKeys = routingKeys.filter(item => !existingRoutingKeys.includes(item));
             setExistingListeners(routingKeys);
-        }, 2000);
+            if(newKeys.length > 0){
+                await initializePubSubResources(newKeys, callbackListener);
+            }            
+        }, 3000);
     }else{
         await initializePubSubResources([], callbackListener);
     }    

@@ -4,18 +4,37 @@ const groupId = 'pubsub-grp';
 
 // This sets the consumer group with suffix '-' + <sandbox-name> if running in
 // sandboxed workload, otherwise, it just returns the argument.
-function signadotConsumerGroup(sGroupId) {
+function signadotConsumerGroup(sGroupId, routerKeys) {
     
     if (sandboxName !== "") {
-        sGroupId += '-' + sandboxName
+        sGroupId += '-' + sandboxName + '-' + routerKeys
     }
     return sGroupId
 }
 
+async function createSubscription(subscriptionName, routerKeys){
+    let [subscription] = await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
+        filter: routerKeys.length <= 0 ? `attributes.kind="baseline"` : routerKeys.map(x => `attributes.kind="${x}"`).join(' OR '),
+        enableExactlyOnceDelivery: true,
+        ackDeadlineSeconds: 300,
+        retryPolicy: {
+            minimumBackoff: {
+                seconds: 2
+            },
+            maximumBackoff: {
+                seconds: 120
+            }
+        }          
+    })
+    .catch(ex => {
+        console.log(ex);                
+    })
+    return subscription;
+}
+
 async function initializePubSubResources(routerKeys, callback) { // wrapper
-    let subscriptionName = signadotConsumerGroup(groupId);
-    subscriptionName += routerKeys.map(x => `-${x}`).join('-')
-    
+    let subscriptionName = signadotConsumerGroup(groupId, routerKeys.map(x => `-${x}`).join('-'));
+
     // Step 1: Create the topic if it doesn't exist
     try {
         await pubSubClient.topic(pubsubTopic).get({ autoCreate: true });
@@ -30,23 +49,7 @@ async function initializePubSubResources(routerKeys, callback) { // wrapper
         const subscriptionExists = sub.some(s => s.name.split('/').pop() === subscriptionName);
         let subscription;
         if (!subscriptionExists) {
-            [subscription] = await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
-                filter: routerKeys.length <= 0 ? `attributes.kind="baseline"` : routerKeys.map(x => `attributes.kind="${x}"`).join(' OR '),
-                enableExactlyOnceDelivery: true,
-                ackDeadlineSeconds: 300,
-                retryPolicy: {
-                    minimumBackoff: {
-                        seconds: 2
-                    },
-                    maximumBackoff: {
-                        seconds: 120
-                    }
-                }          
-            })
-            .catch(ex => {
-                console.log(ex);                
-            })
-            
+            subscription = await createSubscription(subscriptionName, routerKeys)
         }
         else{
             // Fetch the existing subscription
@@ -91,35 +94,6 @@ const publishMessages = async (topicName, message, headers, routingKey) => {
         console.error(`Error publishing message to topic ${topicName}:`, error);
     }
 };
-
-// Function to process messages received from Pub/Sub
-// const consumeMessages = async (topicName, onNewMessage) => {
-//     try {
-//         // Ensure the topic exists
-//         const topic = pubSubClient.topic(topicName);
-//         const [subscriptions] = await topic.getSubscriptions();
-                
-//         if (subscriptions.length === 0) {
-//             console.warn(`No subscriptions found for topic: ${topicName}`);
-//             return;
-//         }
-
-//         // Iterate through all subscriptions and attach message listeners
-//         subscriptions.forEach(subscription => {
-//             console.log(`Listening to subscription: ${subscription.name}`);
-
-//             // Event listener for incoming messages
-//             subscription.on('message', );
-
-//             // Event listener for subscription errors
-//             subscription.on('error', error => {
-//                 console.error(`Error in subscription ${subscription.name}:`, error);
-//             });
-//         });
-//     } catch (error) {
-//         console.error(`Error setting up listeners for topic ${topicName}:`, error);
-//     }
-// };
 
 module.exports = {
     initializePubSubResources: initializePubSubResources,
