@@ -38,7 +38,7 @@ function runFrontend() {
         let routingKey = extractRoutingKey(req.get('baggage'));
 
         // Register an event
-        registerEvent('Sending publish request to producer API', msg, routingKey,
+        registerEvent('Sending publish request to publisher API', msg, routingKey,
             () => { },
             (error) => {
                 console.error(error);
