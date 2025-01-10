@@ -38,7 +38,7 @@ function runProducer() {
             (error) => errorHandler(res, error)
         )
 
-        publishMessages(pubsubTopic, msg, { baggage: req.get('baggage') }, routingKey)
+        publishMessages(pubsubTopic, msg, { baggage: req.get('baggage') })
             .then(() => {
                 console.log('Message successfully published to pubsub')
                 res.json({})

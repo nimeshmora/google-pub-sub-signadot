@@ -2,19 +2,18 @@ const { pubSubClient } = require('./pubsubClient.js');
 const { sandboxName, pubsubTopic } = require('./../../../config/config.js');
 const groupId = 'pubsub-grp';
 
-// This sets the consumer group with suffix '-' + <sandbox-name> + '-' + routerKeys if running in
+// This sets the consumer group with suffix '-' + <sandbox-name> if running in
 // sandboxed workload, otherwise, it just returns the argument.
-function signadotConsumerGroup(sGroupId, routerKeys) {
+function signadotConsumerGroup(sGroupId) {
     
     if (sandboxName !== "") {
-        sGroupId += '-' + sandboxName + '-' + routerKeys
+        sGroupId += '-' + sandboxName
     }
     return sGroupId
 }
 
-async function createSubscription(subscriptionName, routerKeys){
+async function createSubscription(subscriptionName){
     let [subscription] = await pubSubClient.createSubscription(pubsubTopic, subscriptionName, {
-        filter: routerKeys.length <= 0 ? `attributes.kind="baseline"` : routerKeys.map(x => `attributes.kind="${x}"`).join(' OR '),
         enableExactlyOnceDelivery: true,
         ackDeadlineSeconds: 300,
         retryPolicy: {
@@ -32,8 +31,8 @@ async function createSubscription(subscriptionName, routerKeys){
     return subscription;
 }
 
-async function initializePubSubResources(routerKeys, callback) { // wrapper
-    let subscriptionName = signadotConsumerGroup(groupId, routerKeys.map(x => `-${x}`).join('-'));
+async function initializePubSubResources(callback) { // wrapper
+    let subscriptionName = signadotConsumerGroup(groupId);
 
     // Step 1: Create the topic if it doesn't exist
     try {
@@ -49,7 +48,7 @@ async function initializePubSubResources(routerKeys, callback) { // wrapper
         const subscriptionExists = sub.some(s => s.name.split('/').pop() === subscriptionName);
         let subscription;
         if (!subscriptionExists) {
-            subscription = await createSubscription(subscriptionName, routerKeys)
+            subscription = await createSubscription(subscriptionName)
         }
         else{
             // Fetch the existing subscription
@@ -74,9 +73,9 @@ async function initializePubSubResources(routerKeys, callback) { // wrapper
 }
 
 // Function to publish messages to a Pub/Sub topic
-const publishMessages = async (topicName, message, headers, routingKey) => {
+const publishMessages = async (topicName, message, headers) => {
     try {
-        let noRtKey = routingKey === undefined || routingKey === null;
+        // Convert the message to a buffer
         const dataBuffer = Buffer.from(JSON.stringify({
             value: JSON.stringify(message),
             headers: headers || {}, // Include headers if provided, or an empty object
@@ -84,10 +83,7 @@ const publishMessages = async (topicName, message, headers, routingKey) => {
 
         // Publish a message to the specified topic with attributes
         await pubSubClient.topic(topicName).publishMessage({
-            data: dataBuffer,
-            attributes: {
-                kind: `${(noRtKey && sandboxName === "") || (!noRtKey && sandboxName !== "")? 'baseline' : routingKey}`
-            }
+            data: dataBuffer
         });
         
     } catch (error) {
