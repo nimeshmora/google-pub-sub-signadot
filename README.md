@@ -6,7 +6,6 @@
   
 This is a sample application to demonstrate how Signadot sandboxes can be used
 in the case of cloud-native applications with asynchronous architectures.
->>>>>>> origin/dev
 
 This application is formed by three microservices, the `frontend`, the
 `publisher`, and the `subscriber`, one `Google Manage Pub/Sub Instance`, and one `Redis` server.
