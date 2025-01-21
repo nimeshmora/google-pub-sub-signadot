@@ -1,165 +1,119 @@
-# [Tutorial] How to Create Signadot Sandboxes for Services that Use Google Pub/Sub
+# PubSub Demo - Publish Messages On Demand
 
+<<<<<<< HEAD
 
 
 
 ## Links
 - [Selective Consumption with Kafka Example Repository](https://github.com/signadot/examples/tree/main/selective-consumption-with-kafka)
 - [Kafka Step-by-Step Tutorial](https://www.signadot.com/blog/kafka-step-by-step-tutorial)
+=======
+This is a sample application to demonstrate how Signadot sandboxes can be used
+in the case of cloud-native applications with asynchronous architectures.
+>>>>>>> origin/dev
 
-## Introduction
-### Overview of Google Pub/Sub:
-- Google Pub/Sub is a fully-managed messaging service for asynchronous communication between microservices.
-- It enables event-driven architectures with decoupled publishers and subscribers.
+This application is formed by three microservices, the `frontend`, the
+`publisher`, and the `subscriber`, one `Google Manage Pub/Sub Instance`, and one `Redis` server.
 
-### Challenges in Testing Pub/Sub-Based Microservices:
-- Shared staging environments can lead to interference between developers' tests.
-- Ensuring test isolation while maintaining shared infrastructure can be challenging.
+The `frontend` exposes an HTTP server from where static content (HTML, images)
+can be accessed, and a minimal REST API with two different methods, one for
+publishing a message, and another for getting log entries.
 
-### Need for Sandboxes:
-- Sandboxes provide isolated environments for feature testing without impacting other services.
-- They ensure selective message consumption and routing based on specific identifiers.
+The `publisher` exposes a REST API with a single method that is called from the
+frontend, every time a user submits a new message. Upon receiving a request it
+publishes the message in `PubSub` with the provided information (by default in
+the topic `pubsub-demo`).
 
-### Signadot Sandboxes as a Solution:
-- Signadot Sandboxes allow developers to test Pub/Sub workflows in isolated environments.
-- By leveraging routing keys and the Routes API, messages are dynamically routed to sandbox-specific services.
+The `subscriber` will perform a selective consumption of messages from `PubSub`.
+Said selective consumption logic will use the [Signadot Routes
+API](https://github.com/signadot/routesapi) (the REST version of it) to get the
+required information to define if one message should be processed or not.
 
-[This section can be concise as this is a tutorial is about using Sandboxes with Google Pub/Sub and the focus is on the code and getting it to work end-to-end. The "why sandbox" aspect is assumed to be known and it out of scope for this tutorial.]
+The three services from above implement context propagation via `OpenTelemetry`,
+and upon receiving requests or consuming messages from `PubSub`, they log those
+events in the `Redis` server.
 
-## Components of the Demo Application
+Finally the `frontend` reads those logs and displays them on the UI (the browser
+will pull the `frontend` API every two seconds).
 
-### Publisher:
-- Sends messages to a Pub/Sub topic.
-- Adds sandbox-specific routing keys to message attributes.
+![image](./docs/images/architecture.png)
 
-### Subscriber:
-- Consumes messages from Pub/Sub topics.
-- Processes messages only if the routing key matches its sandbox environment.
+## Running
 
-### Signadot Operator:
-- Manages the sandbox environment and provides routing information using the Routes API.
+First, install the provided manifests in the `k8s` directory
 
-### Frontend:
-- A user interface to:
-  - Send messages.
-  - View logs for processed messages (both baseline and sandbox).
+Go to `IAM & Admin` in the Google Cloud Console.
 
-## Request Flow
+Create a new service account and grant the `Pub/Sub Admin` role.
 
-### Baseline Flow (No Routing Key):
-- Publisher sends messages without routing keys.
-- Only the baseline subscriber processes these messages.
-- Sandbox subscribers ignore the messages due to the absence of routing keys.
+Copy the service account email address.
 
-### Sandbox Flow (With Routing Key):
-- Publisher sends messages with sandbox-specific routing keys.
-- Sandbox subscribers process these messages if the routing key matches their sandbox.
-- Baseline subscribers ignore these messages.
+Open `k8s/pubsub/pubsubsa.yaml` and set the `iam.gke.io/gcp-service-account` property with the service account email.
 
----
+Apply the changes using
 
-## Step-by-Step Guide
+```sh
+kubectl create ns pubsub-demo
+kubectl apply -f k8s/pubsub/pubsubsa.yaml
+```
+Configure IAM Policy Binding
 
-### Step 1: Deploy the Demo Application
+`Check IAM Admin Role:` Verify that the service account has been granted the IAM Admin role.
 
-1. **Clone the Repository:**
-   ```bash
-   git clone <repository-link>
-   cd <repository-folder>
-   ```
+Bind Workload Identity:
 
-2. **Deploy the Application:**
-   Deploy all necessary components, including the Publisher, Subscriber, Redis, and Frontend, to your Kubernetes cluster.
+```sh
+gcloud iam service-accounts add-iam-policy-binding <service account email> \
+    --member="serviceAccount:<project id>.svc.id.goog[pubsub-demo/pubsub-ksa]" \
+    --role="roles/iam.workloadIdentityUser" \
+    --project=<project id>
+kubectl -n pubsub-demo apply -f k8s/pieces
+```
 
-3. **Verify the Deployment:**
-   Ensure all components are running properly in the Kubernetes cluster.
+Now, That needs to connect `[cluster]` with Signadot then create some sandboxes and route groups 
+to perform some tests.
+Go to `[Signadot Dashboard]` (https://app.signadot.com/).
 
-4. **Expose the Frontend:**
-   Forward the frontend service to enable interaction with the demo application.
+Login to `[Signadot Dashboard]` then Navigate to cluster section and follow the instruction which is provided
+it will connect with your k8's cluster
 
-   ```bash
-   kubectl port-forward svc/frontend-service 8080:80
-   ```
+Then navigate to the `Sandboxes` section, copy and past configuration in the `signadot/sandboxes/subscriber.yaml` and `signadot/sandboxes/subscriber.yaml`.
 
-### Step 2: Test Baseline Behavior Without Sandboxes
+Then navigate into the `Router Groups` section and add following infomation
 
-1. **Access the Frontend:**
-   Open the frontend in a browser: `http://localhost:8080`.
+Name: `pubsub-demo`
 
-2. **Send a Message:**
-   Use the frontend to send a message without a routing key.
+Description: `route group containing the subscriber and publisher sandboxes together`
 
-3. **Observe Results:**
-   Verify that the baseline subscriber processes the message.
-   Confirm that sandbox subscribers ignore the message.
+Match:  
 
-### Step 3: Update the Publisher for Routing Key Propagation
+    label name: `demo`
 
-1. **Extract Routing Key:**
-   Modify the Publisher to extract routing keys from incoming requests.
+    value: `pubsub`
 
-2. **Attach Routing Key to Messages:**
-   Ensure the routing key is added to Pub/Sub message attributes before publishing.
+Endpoints:  
 
-### Step 4: Update Subscriber for Selective Message Consumption
+    name: `frontend`
 
-1. **Assign Unique Subscription Names:**
-   Dynamically generate subscription names using the sandbox environment variable provided by Signadot.
+    protocol: `http`
+    
+    url: `frontend.pubsub-demo.svc:4000`
 
-2. **Fetch Routing Keys Using the Routes API:**
-   Periodically update routing keys from the Signadot Routes API.
+Check `K8's cluster` this will add additional two pods in the cluster 
 
-3. **Filter Messages Based on Routing Keys:**
-   Implement logic to process messages only if the routing key matches the subscriber's sandbox.
+Alternatively, you can install the [Signadot Browser
+Extension](https://www.signadot.com/docs/browser-extensions) and create a
+port-forward to the `frontend` service:
 
-4. **Ensure Message Context:**
-   Retain and propagate the routing key in subsequent inter-service communications to maintain context.
+```sh
+kubectl port-forward service/frontend -n pubsub-demo 4000:4000
+```
 
-### Step 5: Create Sandboxes
+Open a browser at http://localhost:4000/, and use the Signadot extension to set
+your routing context.
 
-1. **Create Publisher Sandbox:**
-   Use Signadot to create a sandbox for the Publisher, enabling it to send sandbox-specific messages.
+To uninstall:
 
-2. **Create Subscriber Sandbox:**
-   Use Signadot to create a sandbox for the Subscriber, ensuring it processes only relevant sandbox-specific messages.
-
-### Step 6: Test Sandbox Behavior
-
-1. **Scenario 1: Baseline Publisher and Baseline Subscriber**
-   - Send a message without a routing key.
-   - Verify that only the baseline subscriber processes the message.
-
-2. **Scenario 2: Baseline Publisher and Sandbox Subscriber**
-   - Enable the sandbox environment for the Subscriber.
-   - Send a message with a routing key.
-   - Verify that the sandbox Subscriber processes the message while the baseline Subscriber ignores it.
-
-3. **Scenario 3: Sandbox Publisher and Sandbox Subscriber**
-   - Enable sandbox environments for both the Publisher and Subscriber.
-   - Send a message with a routing key.
-   - Verify that only the sandbox Subscriber processes the message.
-
-[Note that each consumer that is sandboxed will need to create a new "subscription" as per https://cloud.google.com/pubsub/docs/pubsub-basics as it needs to get a copy of all the msgs that the baseline consumer receives.]
-### Step 7: Monitor and Debug
-
-1. **Log Observations:**
-   Monitor logs in the frontend or Signadot dashboard to verify routing behavior.
-
-2. **Validation:**
-   Confirm that routing keys effectively isolate messages between baseline and sandbox environments.
-
----
-
-## Conclusion
-
-1. Highlight how Signadot Sandboxes enable isolated testing of Google Pub/Sub workflows.
-2. Emphasize the scalability and cost-efficiency of sandbox environments in reducing test interference.
-3. Explain how this approach improves developer productivity by enabling isolated feature testing without duplicating infrastructure.
-
----
-
-## Resources
-
-1. **GitHub Repository:** [Link to Demo Application Repository](<repository-link>)
-2. **Signadot Documentation:** [Guide for Using Signadot Sandboxes](https://docs.signadot.com/)
-3. **Google Pub/Sub Documentation:** [Configuring Pub/Sub Topics and Subscriptions](https://cloud.google.com/pubsub/docs/overview)
+```sh
+kubectl -n pubsub-demo delete -f k8s/pieces
+```
