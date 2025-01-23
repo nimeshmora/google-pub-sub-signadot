@@ -1,5 +1,9 @@
 # PubSub Demo - Publish Messages On Demand
-
+#
+## Links
+- [Selective Consumption with Kafka Example Repository](https://github.com/signadot/examples/tree/main/selective-consumption-with-kafka)
+- [Kafka Step-by-Step Tutorial](https://www.signadot.com/blog/kafka-step-by-step-tutorial)
+  
 This is a sample application to demonstrate how Signadot sandboxes can be used
 in the case of cloud-native applications with asynchronous architectures.
 
